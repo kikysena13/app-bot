@@ -1,0 +1,41 @@
+{
+  "name": "dcbot",
+  "version": "1.0.0",
+  "description": "fullstackdc",
+  "homepage": "https://github.com/kikysena13/app-bot#readme",
+  "bugs": {
+    "url": "https://github.com/kikysena13/app-bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kikysena13/anpm -ipp-bot.git"
+  },
+  "license": "ISC",
+  "author": "Kiky",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend/frontend run start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "discord.js": "^13.17.1",
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "zod": "^4.6.6"
+  },
+  "keywords": [],
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "concurrently": "^10.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
