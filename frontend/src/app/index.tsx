@@ -1,98 +1,37 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
+import { authApi } from '@/services/api';
 
 export default function HomeScreen() {
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    authApi.me().then((result) => {
+      if (result.authenticated) router.replace('/dashboard');
+    }).catch(() => undefined).finally(() => setLoading(false));
+  }, []);
+  if (loading) return <View style={styles.center}><ActivityIndicator color="#5865f2" /></View>;
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <View style={styles.container}>
+      <Text style={styles.eyebrow}>DISCORD COMMAND CENTER</Text>
+      <Text style={styles.title}>A calmer control room for your community.</Text>
+      <Text style={styles.subtitle}>Sign in with Discord to manage only the servers where you have administrator access.</Text>
+      <Pressable style={styles.button} onPress={() => { void Linking.openURL(authApi.loginUrl); }}>
+        <Text style={styles.buttonText}>Continue with Discord</Text>
+      </Pressable>
+      <Text style={styles.note}>Your bot token and server credentials never leave the backend.</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#11121a' },
+  container: { flex: 1, justifyContent: 'center', padding: 28, backgroundColor: '#11121a' },
+  eyebrow: { color: '#8c91ff', fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 16 },
+  title: { color: '#fff', fontSize: 38, fontWeight: '800', lineHeight: 44, maxWidth: 620 },
+  subtitle: { color: '#b9bbc7', fontSize: 17, lineHeight: 26, marginTop: 18, maxWidth: 560 },
+  button: { backgroundColor: '#5865f2', borderRadius: 10, padding: 16, marginTop: 30, alignItems: 'center', maxWidth: 280 },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  note: { color: '#777b8e', fontSize: 13, marginTop: 18 },
 });
