@@ -1,124 +1,76 @@
 # Discord Command Center
 
-> A mobile-first command center for keeping a Discord community organized, responsive, and under control.
+Discord Command Center is a mobile-first Expo dashboard backed by one Express/TypeScript process that owns the Discord.js client, OAuth session, authorization checks, analytics, and MySQL access.
 
-Discord Command Center combines a React Native dashboard, a secure Express API, and a Discord bot foundation in one workspace. The goal is simple: give server owners and moderators one calm, fast place to monitor their community and build moderation workflows.
+## Architecture
 
-## What lives here
+- [`backend/`](./backend/) — Express API, Discord OAuth2, Discord.js lifecycle, guild authorization, MySQL pool, and migration.
+- [`frontend/`](./frontend/) — Expo SDK 57 and Expo Router mobile/web dashboard.
+- [`backend/src/db/migrations/001_initial.sql`](./backend/src/db/migrations/001_initial.sql) — rerunnable MySQL schema for users, sessions, guilds, members, activity, settings, and audit logs.
+- `index.js` is legacy and is not started by any current script. Start the bot only through the backend so two Discord clients cannot run together.
 
-| Area | Stack | Purpose |
-| --- | --- | --- |
-| Mobile dashboard | Expo · React Native · Expo Router | The cross-platform control panel for Android, iOS, and web. |
-| API | Express · TypeScript · Zod | The backend boundary for dashboard data and future Discord actions. |
-| Bot | Discord.js | The Discord gateway client and event automation foundation. |
-| Data layer | MySQL driver (`mysql2`) | Ready for future settings, audit logs, and moderation data. |
+The frontend never receives a bot token, OAuth client secret, database credential, or session secret. Guild IDs are not treated as proof of access: protected routes fetch the guild through Discord.js, fetch the logged-in member, and require `Administrator` or `Manage Guild`.
 
-## Current capabilities
+## Setup
 
-- Mobile Expo application with file-based routing.
-- Express API protected with Helmet, CORS, and JSON request parsing.
-- `GET /api/health` health endpoint for deployment and connectivity checks.
-- Discord bot bootstrap that validates `BOT_TOKEN` before connecting.
-- Root development command that starts the API and Expo together.
+1. Use Node.js 20+ and MySQL 8+.
+2. Install dependencies:
 
-## Project map
+   ```powershell
+   npm install
+   npm --prefix backend install
+   npm --prefix frontend install
+   ```
 
-```text
-appsv/
-├── backend/             # Express API — port 3000
-│   └── src/server.ts
-├── frontend/            # Expo / React Native dashboard — port 8081
-│   └── src/app/
-├── index.js             # Discord bot entry point
-├── .env.example         # Local environment variable template
-└── package.json         # Workspace development commands
-```
+3. Copy `.env.example` to `.env` and provide the backend values. Do not commit `.env`.
+4. Create the database named by `DATABASE_NAME`, then run `backend/src/db/migrations/001_initial.sql`.
+5. In the Discord Developer Portal:
+   - Add `DISCORD_REDIRECT_URI` as an OAuth2 redirect URL.
+   - Enable the `Guild Members`, `Guild Messages`, and `Guild Voice States` intents only when the corresponding tracking feature is enabled.
+   - Invite the bot with the minimum permissions needed for member synchronization and activity events.
+6. Start both services:
 
-## Prerequisites
+   ```powershell
+   npm run dev
+   ```
 
-- Node.js 20 or newer
-- npm 10 or newer
-- A Discord bot token, if you plan to run the bot
-- Expo Go on a physical device, or an Android/iOS simulator, for mobile testing
+   The API is at `http://localhost:3000`; Expo normally uses `http://localhost:8081`.
 
-## Quick start
+For a physical device, set `EXPO_PUBLIC_API_URL` to a backend URL reachable from that device. This is a public API base URL, not a secret.
 
-Install dependencies once from each package directory:
+## Environment
 
-```powershell
-npm install
-npm --prefix backend install
-npm --prefix frontend install
-```
+See [`.env.example`](./.env.example). `EVENT_RETENTION_DAYS` defaults to 90 and is also the default for newly-created guild settings. Secrets must remain backend-only.
 
-Create your local environment file from the example, then set your Discord token:
+## API
 
-```powershell
-Copy-Item .env.example .env
-```
+Implemented routes:
 
-```env
-BOT_TOKEN=replace_with_your_discord_bot_token
-API_PORT=3000
-```
+- `GET /api/health`
+- `GET /api/auth/discord`
+- `GET /api/auth/discord/callback`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+- `GET /api/guilds`
+- `POST /api/guilds/resolve`
+- `GET /api/guilds/:guildId`
+- `GET /api/guilds/:guildId/members`
+- `GET /api/guilds/:guildId/activity`
+- `GET /api/guilds/:guildId/leaderboard`
+- `GET /api/guilds/:guildId/settings`
+- `PATCH /api/guilds/:guildId/settings`
 
-Start the dashboard and API together:
+Errors use `{ "error": { "code": "...", "message": "..." } }`. The health endpoint reports API, database, and bot state without exposing credentials.
 
-```powershell
-npm run dev
-```
-
-This opens the API at `http://localhost:3000` and starts the Expo development server, normally at `http://localhost:8081`. Scan the QR code in the terminal using Expo Go, or choose the web, Android, or iOS target shown by Expo.
-
-To run the Discord bot separately:
+## Verification
 
 ```powershell
-node index.js
+npm run typecheck
+npm run lint
+npm test
+npm audit --omit=dev
+npm --prefix backend audit --omit=dev
+npm --prefix frontend audit --omit=dev
 ```
 
-## Useful commands
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start API and Expo together from the workspace root. |
-| `npm run dev:backend` | Start the Express API in watch mode. |
-| `npm run dev:frontend` | Start the Expo development server. |
-| `npm --prefix frontend run android` | Open the app on Android. |
-| `npm --prefix frontend run web` | Open the app in a web browser. |
-| `npm --prefix frontend run lint` | Run Expo lint checks. |
-| `npm --prefix backend run start` | Start the API without file watching. |
-
-## API check
-
-Once the API is running, verify it with:
-
-```powershell
-Invoke-RestMethod http://localhost:3000/api/health
-```
-
-Expected response:
-
-```json
-{
-  "status": "ok",
-  "message": "Discord Management API is running"
-}
-```
-
-## Security notes
-
-- Never commit `.env` or expose `BOT_TOKEN` in the mobile app.
-- Keep Discord actions behind the backend API; the Expo client must not hold bot credentials.
-- The backend and its current dependencies pass `npm audit` with zero reported vulnerabilities.
-- Before deploying, restrict CORS to the production dashboard origin and use a managed secret store for credentials.
-
-## Next milestones
-
-1. Connect the dashboard to `/api/health` and authenticated API endpoints.
-2. Add MySQL schema and migrations for guild settings and audit records.
-3. Implement Discord moderation, member, and announcement workflows.
-4. Add role-based access, session persistence, and activity logs.
-
----
-
-Built for communities that deserve a better control room.
+Native OAuth with PKCE/deep links still requires a platform-specific callback bridge and app registration; the current web flow uses an HttpOnly session cookie with OAuth `state`.

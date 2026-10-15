@@ -9,7 +9,7 @@ import { env } from "./config/env.js";
 import { checkDatabase, pool } from "./db/pool.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 import { requireAuth, requireGuildAdmin } from "./middleware/auth.js";
-import { executeForbiddenCommand, forbiddenCommand, recordForbiddenWords } from "./commands/forbidden.js";
+import { executeForbiddenCommand, forbidenCommand, forbiddenCommand, recordForbiddenWords } from "./commands/forbidden.js";
 
 const app = express();
 const discord = new Client({
@@ -17,7 +17,8 @@ const discord = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildVoiceStates
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.MessageContent
   ]
 });
 let botStatus: "online" | "offline" | "unknown" = env.DISCORD_BOT_TOKEN ? "offline" : "unknown";
@@ -85,10 +86,13 @@ discord.once(Events.ClientReady, (readyClient) => {
     guild.commands.create(forbiddenCommand.toJSON()).catch((error) => {
       console.error(`Failed to register commands for guild ${guild.id}:`, error instanceof Error ? error.message : error);
     });
+    guild.commands.create(forbidenCommand.toJSON()).catch((error) => {
+      console.error(`Failed to register command for guild ${guild.id}:`, error instanceof Error ? error.message : error);
+    });
   }
 });
 discord.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand() || interaction.commandName !== forbiddenCommand.name) return;
+  if (!interaction.isChatInputCommand() || ![forbiddenCommand.name, forbidenCommand.name].includes(interaction.commandName)) return;
   try {
     await executeForbiddenCommand(interaction);
   } catch (error) {
