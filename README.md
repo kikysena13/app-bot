@@ -1,6 +1,7 @@
 # Discord Command Center
 
 Discord Command Center is a mobile-first Expo dashboard backed by one Express/TypeScript process that owns the Discord.js client, OAuth session, authorization checks, analytics, and MySQL access.
+test
 
 ## Architecture
 
