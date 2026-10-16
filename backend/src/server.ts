@@ -10,6 +10,7 @@ import { checkDatabase, pool } from "./db/pool.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 import { requireAuth, requireGuildAdmin } from "./middleware/auth.js";
 import { executeForbiddenCommand, forbidenCommand, forbiddenCommand, recordForbiddenWords } from "./commands/forbidden.js";
+import { executePreviewCommand, previewCommand } from "./commands/preview.js";
 
 const app = express();
 const discord = new Client({
@@ -86,18 +87,32 @@ discord.once(Events.ClientReady, (readyClient) => {
     guild.commands.create(forbiddenCommand.toJSON()).catch((error) => {
       console.error(`Failed to register commands for guild ${guild.id}:`, error instanceof Error ? error.message : error);
     });
+    guild.commands.create(previewCommand.toJSON()).catch((error) => {
+      console.error(`Failed to register preview command for guild ${guild.id}:`, error instanceof Error ? error.message : error);
+    });
     guild.commands.create(forbidenCommand.toJSON()).catch((error) => {
       console.error(`Failed to register command for guild ${guild.id}:`, error instanceof Error ? error.message : error);
     });
   }
 });
 discord.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand() || ![forbiddenCommand.name, forbidenCommand.name].includes(interaction.commandName)) return;
+  if (!interaction.isChatInputCommand()) return;
+  const isForbiddenCommand = [forbiddenCommand.name, forbidenCommand.name].includes(interaction.commandName);
+  if (!isForbiddenCommand && interaction.commandName !== previewCommand.name) return;
   try {
-    await executeForbiddenCommand(interaction);
+    if (interaction.commandName === previewCommand.name) {
+      await executePreviewCommand(interaction);
+    } else {
+      await executeForbiddenCommand(interaction);
+    }
   } catch (error) {
-    console.error("Forbidden command failed:", error instanceof Error ? error.message : error);
-    const reply = { content: "Gagal mengambil laporan forbidden chat.", ephemeral: true };
+    console.error(`${interaction.commandName} command failed:`, error instanceof Error ? error.message : error);
+    const reply = {
+      content: interaction.commandName === previewCommand.name
+        ? "Gagal mengambil profil member."
+        : "Gagal mengambil laporan forbidden chat.",
+      ephemeral: true
+    };
     if (interaction.replied || interaction.deferred) await interaction.followUp(reply);
     else await interaction.reply(reply);
   }
