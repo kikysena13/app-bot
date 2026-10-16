@@ -36,3 +36,8 @@ Atau langsung jalankan frontend Android:cd /d B:\appsv npm --prefix frontend run
 - Menambahkan pengurutan daftar member pada halaman detail setiap server.
 - Menambahkan tombol `Newest` dan `Oldest` pada section Members untuk mengurutkan berdasarkan tanggal bergabung.
 - Member tanpa tanggal bergabung selalu ditempatkan di bagian paling akhir.
+
+## Bot commands
+
+- `/preview member:<member>` — displays the selected server member’s profile in an embed, including their avatar, banner (when set), username, server display name, ID, account creation and server join dates, roles, role color, profile accent color, and avatar decoration (when set).
+- `/forbidden` and `/forbiden` — show the recorded forbidden-word report.
